@@ -1,0 +1,113 @@
+---
+title: "Relatório mensal de vendas"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r bibliotecas, include=FALSE}
+#Relatório mensal de vendas
+require(dplyr)
+require(readr)
+require(ggplot2)
+require(plotly)
+library(readxl)
+```
+
+```{r vendas, echo=FALSE}
+pipe_FunildeVendas<- read_delim("pipe Funil de Vendas - 20200413.csv", 
+                                  ";", escape_double = FALSE, locale = locale(), 
+                                  trim_ws = TRUE)
+not_all_na <- function(x) {!all(is.na(x))}
+
+pipe_FunildeVendas <- pipe_FunildeVendas %>% select_if(not_all_na)
+
+important_columns <- c("ID", 
+                       "Pipeline",
+                       "Fase",
+                       "Responsável", 
+                       "Nome do negócio", 
+                       "Tipo", 
+                       "Renda",
+                       "Empresa", 
+                       "Data de início", 
+                       "Data de fechamento",
+                       "Produto",
+                       "Origem da Oportunidade", 
+                       "Deal de:" )
+
+pipe_FunildeVendas <- subset.data.frame(pipe_FunildeVendas, select= important_columns)
+
+pipe_FunildeVendas <- pipe_FunildeVendas[!is.na(pipe_FunildeVendas$Pipeline) & pipe_FunildeVendas$Pipeline == "Funil de vendas",]
+pipe_FunildeVendas$`Data de fechamento` <- as.Date(x = pipe_FunildeVendas$`Data de fechamento`, format = "%d/%m/%Y")
+pipe_FunildeVendas$`Data de início` <- as.Date(x = pipe_FunildeVendas$`Data de início`, format = "%d/%m/%Y")
+pipe_FunildeVendas$"endQuarter" <- quarters(pipe_FunildeVendas$`Data de fechamento`) 
+pipe_FunildeVendas$"Trimestre de abertura" <- quarters(pipe_FunildeVendas$`Data de fechamento`)
+pipe_FunildeVendas$Renda <- as.numeric(pipe_FunildeVendas$Renda)
+pipe_FunildeVendas %>% 
+  mutate_at(vars(Renda), funs(round(x = ., digits = 0)))
+
+QuarterSales <- pipe_FunildeVendas%>%
+  filter(Fase == "Ganho Fechado")
+  
+QuarterSalesSum <- QuarterSales %>% 
+  group_by(`endQuarter`, Ano = format(`Data de fechamento`, "%Y" )) %>%
+  summarise(Renda = sum(Renda)) 
+ 
+ QuarterSalesSum <- QuarterSalesSum %>% 
+  mutate(Rendaper1000 = Renda/1000 ) 
+ 
+QuarterSalesSum$Rendaper1000 <- round(QuarterSalesSum$Rendaper1000, 0)
+
+Q1SalesSum <- QuarterSalesSum %>% 
+  filter(endQuarter == "Q1")
+
+ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Rendaper1000, label = Q1SalesSum$Rendaper1000))+
+  geom_col(fill = "red", color = "black") +
+  geom_text(size = 4,position = position_stack(vjust = 1.1)) +
+  ylab("Renda em milhares de R$") +
+  xlab("Ano")
+
+
+#QuarterSalesCompare <- QuarterSalesSum %>%
+  #filter(Ano > 2018)
+```
+
+```{r echo=FALSE}
+tarefas<- read_excel("~/Relatorio mensal de vendas - Pris/Tarefas bitrix 20200407.xlsx")
+
+tarefas$Deadline <- as.Date(x = tarefas$Deadline, format = "%d/%m/%Y")
+tarefas$`Responsible person` <- as.factor(x = tarefas$`Responsible person`)
+
+importantPeople <- c("Julia Couto",
+                     "Daniel Eloi",
+                     "Andressa Morais",
+                     "Laura Vianna",
+                     "Carlos Carvalho",
+                     "Henrique Rocha",
+                     "Vitor Almeida",
+                     "Leandro Rangel",
+                     "Diego Stehling",
+                     "Pedro Gonçalvez",
+                     "Alysson Vidotti"
+                     )
+  
+tarefasAtrasadas <- tarefas %>% 
+  filter(Deadline < Sys.Date())
+
+tarefasAtrasadas <- tarefasAtrasadas%>% 
+  filter(`Responsible person` %in% importantPeople)
+
+ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
+  geom_bar(fill = "red", color = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.5)) +
+  geom_text(stat='count', aes(label=..count..), vjust=-1, ) +
+  ggtitle("Tarefas atrasadas") +
+  xlab("Pessoa Responsável") +
+  ylab("Contagem")+
+  ylim(0,40)
+
+```
+
