@@ -78,7 +78,7 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
   #filter(Ano > 2018)
 ```
 
-```{r tarefasAtrasadas,echo=FALSE}
+```{r tarefasAtrasadas,echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 tarefas<- read_excel("~/Relatorio mensal de vendas - Pris/Tarefas bitrix 20200407.xlsx")
 
 tarefas$Deadline <- as.Date(x = tarefas$Deadline, format = "%d/%m/%Y")
@@ -114,17 +114,53 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
 
 ```
 
-```{r AcessosSites}
+```{r AcessosIlupi, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 visitas_Ilupi <- read_csv("C:/Users/ed.velho/Downloads/Analytics Todos os dados do website Visitas ao site Ilupi 20170401-20200420.csv", skip = 20, col_names = c("Dia", "Sessoes"))
 
 visitas_Ilupi$`Dia` <-  as.Date(x = visitas_Ilupi$`Dia`, format = "%d/%m/%Y")
 
-visitas_Ilupi_Agregado <- visitas_Ilupi %>% group_by("Data"=floor_date(Dia, "month")) %>%
-   summarize(Sessoes=sum(Sessoes))
+visitas_Ilupi <- visitas_Ilupi %>% 
+  filter(year(Dia) > 2017 )
+
+visitas_Ilupi_Agregado <- visitas_Ilupi %>% 
+  group_by("Data"=floor_date(Dia, "month")) %>%
+  summarize(Sessoes=sum(Sessoes))
 
 visitas_Ilupi_Agregado$Ano <- as.factor(year(visitas_Ilupi_Agregado$Data))
 visitas_Ilupi_Agregado$Mes <- month(visitas_Ilupi_Agregado$Data)
 
-  ggplot() + geom_line(data = visitas_Ilupi_Agregado, aes(x = Mes, y = Sessoes, color = Ano)) + scale_x_continuous(breaks = 1:12)
+  ggplot() + 
+    geom_line(data = visitas_Ilupi_Agregado, aes(x = Mes, y = Sessoes, color = Ano,), size = 2) + 
+    scale_x_continuous(breaks = 1:12, labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun","Jul", "Ago", "Set", "Out", "Nov", "Dez")) +
+    labs(title = "Visitantes no site do Ilupi") +
+    theme(panel.grid.minor.x = element_blank())
+  
+    
+    
+```
+```{r AcessosPris, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
+
+Visitas_Site_Pris <- read_csv("C:/Users/ed.velho/Downloads/Visitas Site Pris - 20200424.csv", skip = 19, col_names = c("Dia", "Usuarios"))
+
+Visitas_Site_Pris$Dia <-  as.Date(x = Visitas_Site_Pris$Dia, format = "%d/%m/%Y")
+
+Visitas_Site_Pris$Usuarios <- as.numeric(Visitas_Site_Pris$Usuarios)
+
+Visitas_Site_Pris <- Visitas_Site_Pris %>% 
+  filter(year(Dia) > 2017 )
+
+Visitas_Site_Pris_Agregado <- Visitas_Site_Pris %>% 
+  group_by("Data"=floor_date(Dia, "month")) %>%
+  summarize(Usuarios=sum(Usuarios))
+
+Visitas_Site_Pris_Agregado$Ano <- as.factor(year(Visitas_Site_Pris_Agregado$Data))
+Visitas_Site_Pris_Agregado$Mes <- month(Visitas_Site_Pris_Agregado$Data)
+
+  ggplot() + 
+    geom_line(data = Visitas_Site_Pris_Agregado, aes(x = Mes, y = Usuarios, color = Ano,), size = 2) + 
+    scale_x_continuous(breaks = 1:12, labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun","Jul", "Ago", "Set", "Out", "Nov", "Dez")) +
+    labs(title = "Visitantes no site do Site Pris") +
+    theme(panel.grid.minor.x = element_blank())
+  
 ```
 
