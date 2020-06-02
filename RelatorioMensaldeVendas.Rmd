@@ -1,5 +1,5 @@
 ---
-title: "Relatório mensal de vendas"
+title: "Relatório mensal de Crescimento"
 output:
   html_document: default
   pdf_document: default
@@ -20,6 +20,7 @@ library(readxl)
 require(lubridate)
 library(zoo)
 require(forecast)
+require(sunburstR)
 ```
 
 
@@ -75,16 +76,20 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
   geom_text(size = 4,position = position_stack(vjust = 1.1)) +
   ylab("Renda em milhares de R$") +
   xlab("Ano") +
-  ggtitle("Renda em Q2 de cada ano" )
+  ggtitle("Renda no 2º trimestre de cada ano" )
 
 ```
   
-  Começamos comparando os semestres para tentar englobar a sazonalidade que já percebemos nas nossa vendas. A primeira vista só atingimos cerca de 10% das vendas do semestre até agora. Seria Abril um mês fraco e que recuperariamos nos outros meses do semestre?
+  Este ano já conseguimos ter 50% das vendas do ano passado para o mesmo trimestre. 
+  
   
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 
 MonthSales <- pipe_FunildeVendas %>%
   filter(Fase == "Ganho Fechado")
+
+MonthSales <- MonthSales %>% 
+  rename ("Deal_de" = `Deal de:`)
 
 MonthSalesSum <- MonthSales %>% 
   group_by("Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" )) %>%
@@ -96,96 +101,43 @@ MonthSalesSum <- MonthSales %>%
  MonthSalesSum$Rendaper1000 <- round(MonthSalesSum$Rendaper1000, 0)
  
  AbrilSalesSum <- MonthSalesSum %>% 
-  filter(Data_de_fechamento == 4 & Ano != 2017)
+  filter(Data_de_fechamento == (month(Sys.Date())-1) & Ano > (year(Sys.Date())-3))
 
 ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSalesSum$Rendaper1000, label = AbrilSalesSum$Rendaper1000))+
   geom_col(fill = "red", color = "black") +
   geom_text(size = 4,position = position_stack(vjust = 1.1)) +
   ylab("Renda em milhares de R$") +
   xlab("Ano") +
-  ggtitle("Renda em Abril de cada ano" )
+  ggtitle(sprintf("Renda em %s de cada ano", month(Sys.Date()-month(1), label = TRUE, abbr = FALSE)))
 ```
   
-  Os dados nos ostram que não. Em abril ja vendemos de 3 a 4 vezes o que fizemos em 2020. Precisamos dar um gás nas vendas ou não conseguiremos nem manter o nível do nosso ano anterior. Certamente fomos impactados pela Pandemia.
-  
-```{r  Q1Sales, echo=FALSE}
-QuarterSales <- pipe_FunildeVendas%>%
-  filter(Fase == "Ganho Fechado")
-  
-QuarterSalesSum <- QuarterSales %>% 
-  group_by(`endQuarter`, Ano = format(`Data de fechamento`, "%Y" )) %>%
-  summarise(Renda = sum(Renda)) 
- 
- QuarterSalesSum <- QuarterSalesSum %>% 
+  Olhando especificamente para maio nós conseguimos uma venda superior à do ano passado, mesmo durante uma crise. 
+  Cabe uma análise por produto
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+SalesSumbyMonthandDeal <- MonthSales %>% 
+  group_by(Deal_de, "Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" ) ) %>%
+  summarise(Renda = sum(Renda))
+
+SalesSumbyMonthandDeal <- SalesSumbyMonthandDeal %>% 
   mutate(Rendaper1000 = Renda/1000 ) 
  
-QuarterSalesSum$Rendaper1000 <- round(QuarterSalesSum$Rendaper1000, 0)
+SalesSumbyMonthandDeal$Rendaper1000 <- round(SalesSumbyMonthandDeal$Rendaper1000, 0)
+ 
+ThisMonthSalesSum <- SalesSumbyMonthandDeal %>% 
+  filter(Data_de_fechamento == (month(Sys.Date())-1) & Ano > (year(Sys.Date())-3))
 
-Q1SalesSum <- QuarterSalesSum %>% 
-  filter(endQuarter == "Q1" & Ano != 2017)
-
-ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Rendaper1000, label = Q1SalesSum$Rendaper1000))+
-  geom_col(fill = "red", color = "black") +
-  geom_text(size = 4,position = position_stack(vjust = 1.1)) +
-  ylab("Renda em milhares de R$") +
-  xlab("Ano") +
-  ggtitle("Renda em Q1 de cada ano" )
-```
-  
-  Ainda mais porque no primeiro semestre tivemos um bom desempenho mas não o nosso melhor.
-  
-```{r AcessosIlupi, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
-visitas_Ilupi <- read_csv("visitas Ilupi.csv", skip = 20, col_names = c("Dia", "Usuarios"))
-
-visitas_Ilupi$`Dia` <-  as.Date(x = visitas_Ilupi$`Dia`, format = "%d/%m/%Y")
-
-visitas_Ilupi <- visitas_Ilupi %>% 
-  filter(year(Dia) > 2017 )
-
-visitas_Ilupi_Agregado <- visitas_Ilupi %>% 
-  group_by("Data"=floor_date(Dia, "month")) %>%
-  summarize(Usuarios=sum(Usuarios))
-
-visitas_Ilupi_Agregado$Ano <- as.factor(year(visitas_Ilupi_Agregado$Data))
-visitas_Ilupi_Agregado$Mes <- month(visitas_Ilupi_Agregado$Data)
-
-  ggplot() + 
-    geom_line(data = visitas_Ilupi_Agregado, aes(x = Mes, y = Usuarios, color = Ano,), size = 2) + 
-    scale_x_continuous(breaks = 1:12, labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun","Jul", "Ago", "Set", "Out", "Nov", "Dez")) +
-    labs(title = "Visitantes no site do Ilupi") +
-    theme(panel.grid.minor.x = element_blank())
-  
-    
-    
 ```
 
-```{r AcessosPris, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
+```{r sunburst, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+ThisMonthSalesSumSunburst <- read_delim("ThisMonthSalesSum.csv", 
+    ";", escape_double = FALSE, locale = locale(encoding = "ISO-8859-1"), 
+    trim_ws = TRUE)
+ThisMonthSalesSumjson <- ThisMonthSalesSumSunburst[,5:6]
 
-Visitas_Site_Pris <- read_csv("visitas Pris.csv", skip = 19, col_names = c("Dia", "Usuarios"))
+sunburst(data = ThisMonthSalesSumjson, percent = TRUE, count = TRUE)
 
-Visitas_Site_Pris$Dia <-  as.Date(x = Visitas_Site_Pris$Dia, format = "%d/%m/%Y")
-
-Visitas_Site_Pris$Usuarios <- as.numeric(Visitas_Site_Pris$Usuarios)
-
-Visitas_Site_Pris <- Visitas_Site_Pris %>% 
-  filter(year(Dia) > 2017 )
-
-Visitas_Site_Pris_Agregado <- Visitas_Site_Pris %>% 
-  group_by("Data"=floor_date(Dia, "month")) %>%
-  summarize(Usuarios=sum(Usuarios))
-
-Visitas_Site_Pris_Agregado$Ano <- as.factor(year(Visitas_Site_Pris_Agregado$Data))
-Visitas_Site_Pris_Agregado$Mes <- month(Visitas_Site_Pris_Agregado$Data)
-
-  ggplot() + 
-    geom_line(data = Visitas_Site_Pris_Agregado, aes(x = Mes, y = Usuarios, color = Ano,), size = 2) + 
-    scale_x_continuous(breaks = 1:12, labels = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun","Jul", "Ago", "Set", "Out", "Nov", "Dez")) +
-    labs(title = "Visitantes no site do Site Pris") +
-    theme(panel.grid.minor.x = element_blank())
-  
 ```
-
-  O acesso aos nossos sites caíram tanto Pris quanto Ilupi, voltando a níveis do fim do ano passado.
+  
   
 ```{r tarefasAtrasadas, echo=FALSE, message=FALSE, warning=FALSE}
 tarefas <- read_excel("tarefas Bitrix.xlsx")
@@ -193,7 +145,7 @@ tarefas <- read_excel("tarefas Bitrix.xlsx")
 tarefas$Deadline <- as.Date(x = tarefas$Deadline, format = "%d/%m/%Y")
 tarefas$`Responsible person` <- as.factor(x = tarefas$`Responsible person`)
 
-importantPeople <- c("Julia Couto",
+importantPeople <- as.factor(c("Julia Couto",
                      "Daniel Eloi",
                      "Andressa Morais",
                      "Laura Vianna",
@@ -203,11 +155,14 @@ importantPeople <- c("Julia Couto",
                      "Leandro Rangel",
                      "Diego Stehling",
                      "Pedro Gonçalvez",
-                     "Alysson Vidotti"
-                     )
+                     "Alysson Vidotti", 
+                     "Pedro Gonçalves",
+                     "Francine Marinho",
+                     "Gustavo Fernandes"
+                     ))
   
 tarefasAtrasadas <- tarefas %>% 
-  filter(Status == "Pending")
+  filter(Status == "Pending", Deadline < Sys.Date())
 
 tarefasAtrasadas <- tarefasAtrasadas%>% 
   filter(`Responsible person` %in% importantPeople)
@@ -216,10 +171,11 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   geom_bar(fill = "red", color = "black") +
   theme(axis.text.x = element_text(angle = 90, hjust = 0.5)) +
   geom_text(stat='count', aes(label=..count..), vjust=-1, ) +
-  ggtitle("Tarefas pendentes") +
+  ggtitle("Tarefas Atrasadas") +
   xlab("Pessoa Responsável") +
   ylab("Contagem") +
-  ylim(0,8)
+  ylim(0, 50)
 
 ```
 
+  Tivemos muitas tarefas concentradas no Pedro, mas, numa avaliação rápida, todas são tarefas que se atrasaram neste fim de semana
