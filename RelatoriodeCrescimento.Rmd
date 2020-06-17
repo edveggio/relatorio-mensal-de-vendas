@@ -80,9 +80,6 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
 
 ```
   
-  Este ano já conseguimos ter 50% das vendas do ano passado para o mesmo trimestre. 
-  
-  
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 
 MonthSales <- pipe_FunildeVendas %>%
@@ -110,9 +107,7 @@ ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSales
   xlab("Ano") +
   ggtitle(sprintf("Renda em %s de cada ano", month(Sys.Date()-month(1), label = TRUE, abbr = FALSE)))
 ```
-  
-  Olhando especificamente para maio nós conseguimos uma venda superior à do ano passado, mesmo durante uma crise. 
-  Cabe uma análise por produto
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 SalesSumbyMonthandDeal <- MonthSales %>% 
   group_by(Deal_de, "Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" ) ) %>%
@@ -177,5 +172,3 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   ylim(0, 50)
 
 ```
-
-  Tivemos muitas tarefas concentradas no Pedro, mas, numa avaliação rápida, todas são tarefas que se atrasaram neste fim de semana
