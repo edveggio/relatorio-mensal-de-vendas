@@ -23,6 +23,7 @@ if (!require(lubridate)) install.packages("lubridate")
 if (!require(zoo)) install.packages("zoo")
 if (!require(sunburstR)) install.packages("sunberstR")
 if (!require(forecast)) install.packages("forecast")
+if (!require(stringr)) install.packages("stringr")
 ```
 
 
@@ -193,4 +194,27 @@ tarefasSemData <- tarefas %>%
 
 ```
   
+```{r indicadores de SaaS}
+custosMKT <- Fluxo_de_caixa_2020_v29_projecao <- read_delim("Fluxo de caixa 2020 v29 - projecao.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE, 
+    skip = 4)
+
+names(custosMKT)[4] <-paste("categoria")
+
+custosMKT <- custosMKT[,4:length(names(custosMKT))]
+
+custosMKT <- custosMKT[c(-2,-3)]
+
+custosMKT <- custosMKT %>% 
+  filter(str_detect(categoria, "Marketing e Vendas"))
+
+#transformar as entradas em números
+meses_custosMKT <- (custosMKT[-1])
+
+meses_custosMKT[meses_custosMKT=="-"]<-NA
+
+meses_custosMKT<- sapply( meses_custosMKT, as.numeric )
   
+viagensComerciaisTS <- ts(data = custosMKT[2,2:length(custosMKT)], start = c(2019, 1), frequency = 12)
+```
+
