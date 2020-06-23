@@ -195,26 +195,36 @@ tarefasSemData <- tarefas %>%
 ```
   
 ```{r indicadores de SaaS}
-custosMKT <- Fluxo_de_caixa_2020_v29_projecao <- read_delim("Fluxo de caixa 2020 v29 - projecao.csv", 
-    ";", escape_double = FALSE, trim_ws = TRUE, 
-    skip = 4)
+Fluxo_de_caixa_2020_v29_projecao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/06-Jun/Fluxo de caixa 2020 v29 - projecao.csv", 
+    ";", escape_double = FALSE, locale = locale(decimal_mark = ","), 
+    trim_ws = TRUE, skip = 4)
 
-names(custosMKT)[4] <-paste("categoria")
+names(Fluxo_de_caixa_2020_v29_projecao)[4] <-paste("categoria")
 
-custosMKT <- custosMKT[,4:length(names(custosMKT))]
+Fluxo_de_caixa_2020_v29_projecao<- Fluxo_de_caixa_2020_v29_projecao[,4:length(names(Fluxo_de_caixa_2020_v29_projecao))]
 
-custosMKT <- custosMKT[c(-2,-3)]
+Fluxo_de_caixa_2020_v29_projecao <- Fluxo_de_caixa_2020_v29_projecao[c(-2,-3)]
 
-custosMKT <- custosMKT %>% 
+projecao.as.numeric <- function(x){
+  x <- as.numeric(gsub(",", ".", gsub("\\.", "", x)))
+}
+
+meses_custo <- Fluxo_de_caixa_2020_v29_projecao[,2:length(names(Fluxo_de_caixa_2020_v29_projecao))]
+
+meses_custo <- apply(meses_custo, 2, projecao.as.numeric)
+
+Fluxo_de_caixa_2020_v29_projecao[,2:length(names(Fluxo_de_caixa_2020_v29_projecao))] <- meses_custo
+
+custosMKT <- Fluxo_de_caixa_2020_v29_projecao %>% 
   filter(str_detect(categoria, "Marketing e Vendas"))
 
-#transformar as entradas em números
-meses_custosMKT <- (custosMKT[-1])
+sum_custos_MKT <-apply(custosMKT[,2:dim(custosMKT)[2]], 2, FUN = sum, na.rm = TRUE)
 
-meses_custosMKT[meses_custosMKT=="-"]<-NA
+sum_custos_mkt <- as.data.frame(t(sum_custos_mkt))
 
-meses_custosMKT<- sapply( meses_custosMKT, as.numeric )
-  
-viagensComerciaisTS <- ts(data = custosMKT[2,2:length(custosMKT)], start = c(2019, 1), frequency = 12)
+sum_custos_mkt_this_month <- sum_custos_mkt$`mai/19`
+
+new_clients_this_month <- MonthSalesSum %>% 
+  filter(Data_de_fechamento == (month(Sys.Date())-1) & Ano > (year(Sys.Date())-3)) 
 ```
 
