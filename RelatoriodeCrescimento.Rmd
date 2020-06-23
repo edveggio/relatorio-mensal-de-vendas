@@ -24,6 +24,7 @@ if (!require(zoo)) install.packages("zoo")
 if (!require(sunburstR)) install.packages("sunberstR")
 if (!require(forecast)) install.packages("forecast")
 if (!require(stringr)) install.packages("stringr")
+if (!require("DT")) install.packages('DT')
 ```
 
 
@@ -58,6 +59,7 @@ pipe_FunildeVendas$"startQuarter" <- quarters(pipe_FunildeVendas$`Data de fecham
 pipe_FunildeVendas$Renda <- as.numeric(pipe_FunildeVendas$Renda)
 pipe_FunildeVendas %>% 
   mutate_at(vars(Renda), funs(round(x = ., digits = 0)))
+
 
 QuarterSales <- pipe_FunildeVendas%>%
   filter(Fase == "Ganho Fechado")
@@ -184,7 +186,7 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
 
   Tivemos muitas tarefas concentradas no Pedro, mas, numa avaliação rápida, todas são tarefas que se atrasaram neste fim de semana
   
-```{r tarefas sem deal}
+```{r tarefas sem deal e tarefas sem data, message=FALSE, warning=FALSE, include=FALSE}
 
 tarefasSemDeal <- tarefas %>% 
   filter(Status == "Pending",  is.na(CRM))
@@ -192,9 +194,27 @@ tarefasSemDeal <- tarefas %>%
 tarefasSemData <- tarefas %>% 
   filter(Status == "Pending",  is.na(Deadline))
 
+tarefas_com_ploblemas <- dplyr::union(tarefasSemData, tarefasSemDeal)
+
+write.csv2(tarefas_com_ploblemas, file = "tarefas com problemas.csv", )
+
 ```
   
-```{r indicadores de SaaS}
+## Tarafas com problemas
+
+```{r echo=FALSE}
+DT::datatable(tarefas_com_ploblemas, options = list(
+  order = list(list(4, 'asc')))) %>% 
+  DT::formatStyle (
+    'Responsible person',
+    backgroundColor = DT::styleEqual(NA, c('red')))
+
+
+```
+
+  
+```{r indicadores de SaaS, echo=FALSE, message=FALSE, warning=FALSE}
+
 Fluxo_de_caixa_2020_v29_projecao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/06-Jun/Fluxo de caixa 2020 v29 - projecao.csv", 
     ";", escape_double = FALSE, locale = locale(decimal_mark = ","), 
     trim_ws = TRUE, skip = 4)
@@ -220,11 +240,14 @@ custosMKT <- Fluxo_de_caixa_2020_v29_projecao %>%
 
 sum_custos_MKT <-apply(custosMKT[,2:dim(custosMKT)[2]], 2, FUN = sum, na.rm = TRUE)
 
-sum_custos_mkt <- as.data.frame(t(sum_custos_mkt))
+sum_custos_MKT <- as.data.frame(t(sum_custos_MKT))
 
-sum_custos_mkt_this_month <- sum_custos_mkt$`mai/19`
+sum_custos_MKT_this_month <- sum_custos_MKT$`mai/19`
 
-new_clients_this_month <- MonthSalesSum %>% 
-  filter(Data_de_fechamento == (month(Sys.Date())-1) & Ano > (year(Sys.Date())-3)) 
+
+new_clients_this_month <- MonthSales %>% 
+  filter(between("Data de fechamento", today() - days(30), today()))
+
+
 ```
 
