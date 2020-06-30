@@ -24,7 +24,9 @@ if (!require(zoo)) install.packages("zoo")
 if (!require(sunburstR)) install.packages("sunberstR")
 if (!require(forecast)) install.packages("forecast")
 if (!require(stringr)) install.packages("stringr")
-if (!require("DT")) install.packages('DT')
+if (!require(DT)) install.packages("DT")
+if (!require(htmltools)) install.packages("htmltools")
+
 ```
 
 
@@ -196,20 +198,22 @@ tarefasSemData <- tarefas %>%
 
 tarefas_com_ploblemas <- dplyr::union(tarefasSemData, tarefasSemDeal)
 
-write.csv2(tarefas_com_ploblemas, file = "tarefas com problemas.csv", )
+write.csv2(tarefas_com_ploblemas, file = "tarefas com problemas.csv")
 
 ```
   
 ## Tarafas com problemas
 
 ```{r echo=FALSE}
-DT::datatable(tarefas_com_ploblemas, options = list(
+tarefas_com_problemas_DT <-DT::datatable(tarefas_com_ploblemas, options = list(
   order = list(list(4, 'asc')))) %>% 
   DT::formatStyle (
     'Responsible person',
     backgroundColor = DT::styleEqual(NA, c('red')))
 
+save_html(tarefas_com_problemas_DT, "tarefas_com_problemasDT.html")
 
+tarefas_com_problemas_DT
 ```
 
   
@@ -242,12 +246,16 @@ sum_custos_MKT <-apply(custosMKT[,2:dim(custosMKT)[2]], 2, FUN = sum, na.rm = TR
 
 sum_custos_MKT <- as.data.frame(t(sum_custos_MKT))
 
-sum_custos_MKT_this_month <- sum_custos_MKT$`mai/19`
+sum_custos_MKT_this_month <- sum_custos_MKT$`mai/20`
 
 
-new_clients_this_month <- MonthSales %>% 
-  filter(between("Data de fechamento", today() - days(30), today()))
+new_clients_by_month <- MonthSales %>% 
+  group_by("Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" )) %>%
+  summarise(contagem = dplyr::n())
 
+new_clients_this_month <- new_clients_by_month %>% 
+  filter(Ano == year(Sys.Date()), Data_de_fechamento == month(Sys.Date())-1)
 
+CAC <- sum_custos_MKT_this_month/ new_clients_this_month$contagem
 ```
 
