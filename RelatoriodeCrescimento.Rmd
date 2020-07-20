@@ -29,7 +29,11 @@ if (!require(htmltools)) install.packages("htmltools")
 
 ```
 
+Oi pessoal, neste mês vou tentar uma nova forma de comunicação, um relatório online comentado. Assim conseguimos assincronamente saber o que tem se passado com a Pris, evitando reuniões. Estou plenamente aberto para feedback sobre o relatório e este novo formato.  
 
+Muito em breve esse relatório, que anda lá muito simples é verdade, deve ganhar mais musculatura. Construir um [sunbrst](http://rstudio-pubs-static.s3.amazonaws.com/495237_5336f47cb4df483f8f2780cd92066449.html) para nossos produtos, um [sankey](https://www.r-graph-gallery.com/sankey-diagram.html) mostrando os caminhos dos clientes entre meios de marketing e produtos além de outros dados como o Custo de Aquisição do Cliente (CAC), Tempo de vida do cliente (Lifetime e Lifetime value) estão todos no nosso radar. Só estamos esperando a construção do novo Processo de vendas.
+
+## Vendas
 ```{r vendas semestre, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 pipe_FunildeVendas<- read_delim("pipe Funil de Vendas.csv", ";", escape_double = FALSE, locale = locale(), 
                                   trim_ws = TRUE)
@@ -83,11 +87,12 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
   geom_text(size = 4,position = position_stack(vjust = 1.1)) +
   ylab("Renda em milhares de R$") +
   xlab("Ano") +
-  ggtitle("Renda no 2º trimestre de cada ano" )
+  ggtitle("Renda no 2º trimestre de cada ano" ) +
+  theme_minimal()
 
 ```
   
-  Este ano já conseguimos ter 50% das vendas do ano passado para o mesmo trimestre. 
+ Conseguimos vender 5 mil reais à mais do que no ano passado, mesmo em meio à crise!
   
   
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -112,14 +117,15 @@ MonthSalesSum <- MonthSales %>%
 
 ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSalesSum$Rendaper1000, label = AbrilSalesSum$Rendaper1000))+
   geom_col(fill = "red", color = "black") +
-  geom_text(size = 4,position = position_stack(vjust = 1.1)) +
+  geom_text(size = 4,position = position_stack(vjust =1.1)) +
   ylab("Renda em milhares de R$") +
   xlab("Ano") +
-  ggtitle(sprintf("Renda em %s de cada ano", month(Sys.Date()-month(1), label = TRUE, abbr = FALSE)))
+  ggtitle(sprintf("Renda em %s de cada ano", month(floor_date(Sys.Date(), "month") - months(1), label = TRUE, abbr = FALSE))) +
+  theme_minimal()
 ```
   
-  Olhando especificamente para maio nós conseguimos uma venda superior à do ano passado, mesmo durante uma crise. 
-  Cabe uma análise por produto
+ O mês de Junho foi bem melhor que o do ano passado, e isso possibilitou que reequilibrassemos as vendas de Abril que foram mais fracas.
+  
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 SalesSumbyMonthandDeal <- MonthSales %>% 
   group_by(Deal_de, "Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" ) ) %>%
@@ -145,7 +151,7 @@ sunburst(data = ThisMonthSalesSumjson, percent = TRUE, count = TRUE)
 
 ```
   
-  
+## Tarefas Atrasadas
 ```{r tarefasAtrasadas, echo=FALSE, message=FALSE, warning=FALSE}
 tarefas <- read_excel("tarefas Bitrix.xlsx")
 
@@ -174,19 +180,23 @@ tarefasAtrasadas <- tarefas %>%
 tarefasAtrasadas <- tarefasAtrasadas%>% 
   filter(`Responsible person` %in% importantPeople)
 
+xlim_tarefasAtrasadas <- table(tarefasAtrasadas$`Responsible person`)
+
 ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   geom_bar(fill = "red", color = "black") +
   theme(axis.text.x = element_text(angle = 90, hjust = -1)) +
-  geom_text(stat='count', aes(label=..count..), vjust=0.5, hjust= -1 ) +
+  geom_text(stat='count', aes(label=..count..), vjust=0.5, hjust= 1.5 ) +
   ggtitle("Tarefas Atrasadas") +
   xlab("Pessoa Responsável") +
   ylab("Contagem") +
-  ylim(0, 55) +
-  coord_flip()
+  ylim(0, max(xlim_tarefasAtrasadas) +1 ) +
+  coord_flip() +
+  theme_minimal()
 
 ```
 
-  Tivemos muitas tarefas concentradas no Pedro, mas, numa avaliação rápida, todas são tarefas que se atrasaram neste fim de semana
+Seguimos observando como estão as tarefas e seus atrasos. Já conversei com o Carlos e as tarefas que estão em atraso em nome dele são decorrentes da adaptação do Gustavo. 
+Em breve pretendemos também trazer visializações da produtividade positiva (não só esse gráfico-puxão-de-orelha acima), mas para isso é preciso que cada vez mais nós utilizemos os recursos do Bitrix, como tarefas, cards, pipes e ligações. 
   
 ```{r tarefas sem deal e tarefas sem data, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -211,42 +221,51 @@ tarefas_com_problemas_DT <-DT::datatable(tarefas_com_ploblemas, options = list(
     'Responsible person',
     backgroundColor = DT::styleEqual(NA, c('red')))
 
-save_html(tarefas_com_problemas_DT, "tarefas_com_problemasDT.html")
+htmlwidgets::saveWidget(tarefas_com_problemas_DT, "tarefas_com_problemasDT.html")
 
 tarefas_com_problemas_DT
 ```
-
+ 
+ Semanalmente estamos gerando uma lista de tarefas que podem indicar algum problemas, seja porque não tem data para terminar seja porque não estão vinculadas à um negócio. As pessoas responsáveis na lista são avisadas. Essa lista também nos permite agir preventivamente frente a errso de automações. 
+ Um exemplo legal é que na sexta passada uma automação de datas, muito delicada e importante, do pipe de Contas a Receber estava quebrada. Ela só foi percebida por que esta lista indicou erros nas tarefas que estavam sendo criadas. 
   
 ```{r indicadores de SaaS, echo=FALSE, message=FALSE, warning=FALSE}
 
-Fluxo_de_caixa_2020_v29_projecao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/06-Jun/Fluxo de caixa 2020 v29 - projecao.csv", 
+Fluxo_de_caixa_2020_projecao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/06-Jun/Fluxo de caixa 2020 - projecao.csv", 
     ";", escape_double = FALSE, locale = locale(decimal_mark = ","), 
     trim_ws = TRUE, skip = 4)
 
-names(Fluxo_de_caixa_2020_v29_projecao)[4] <-paste("categoria")
+names(Fluxo_de_caixa_2020_projecao)[4] <-paste("categoria")
+names(Fluxo_de_caixa_2020_projecao)[2] <-paste("nome")
 
-Fluxo_de_caixa_2020_v29_projecao<- Fluxo_de_caixa_2020_v29_projecao[,4:length(names(Fluxo_de_caixa_2020_v29_projecao))]
+Fluxo_de_caixa_2020_projecao<- Fluxo_de_caixa_2020_projecao[,2:length(names(Fluxo_de_caixa_2020_projecao))]
 
-Fluxo_de_caixa_2020_v29_projecao <- Fluxo_de_caixa_2020_v29_projecao[c(-2,-3)]
+Fluxo_de_caixa_2020_projecao <- Fluxo_de_caixa_2020_projecao[c(-2,-4,-5)]
 
 projecao.as.numeric <- function(x){
   x <- as.numeric(gsub(",", ".", gsub("\\.", "", x)))
 }
 
-meses_custo <- Fluxo_de_caixa_2020_v29_projecao[,2:length(names(Fluxo_de_caixa_2020_v29_projecao))]
+meses_custo <- Fluxo_de_caixa_2020_projecao[,3:length(names(Fluxo_de_caixa_2020_projecao))]
 
 meses_custo <- apply(meses_custo, 2, projecao.as.numeric)
 
-Fluxo_de_caixa_2020_v29_projecao[,2:length(names(Fluxo_de_caixa_2020_v29_projecao))] <- meses_custo
+Fluxo_de_caixa_2020_projecao[,3:length(names(Fluxo_de_caixa_2020_projecao))] <- meses_custo
 
-custosMKT <- Fluxo_de_caixa_2020_v29_projecao %>% 
+alocacao_pessoas_MKT <- data.frame("nomes" = c("Daniel Eloi", "Francine de Oliveira Marinho","	Gustavo Fernandes Dias","Pedro Henrique de Oliveira Gonçalves","Carlos Henrique de Carvalho Junior","Lorena Gabrielle de Souza Ribeiro","Alysson Vidotti","Leandro de Alencar Rangel","Rheubert Lucas Resende Rodigues Velho", "Diego Moreira"), 
+"alocacao" = c( 0.5, 0.9, 0.9, 0.8, 0.7, 0.5, 0.5, 0.7, 0.4, 0.1))
+
+custosMKT <- Fluxo_de_caixa_2020_projecao %>% 
   filter(str_detect(categoria, "Marketing e Vendas"))
+
+custos_pessoas_MKT <- Fluxo_de_caixa_2020_projecao %>% 
+  filter(nome %in% alocacao_pessoas_MKT$nomes)
 
 sum_custos_MKT <-apply(custosMKT[,2:dim(custosMKT)[2]], 2, FUN = sum, na.rm = TRUE)
 
 sum_custos_MKT <- as.data.frame(t(sum_custos_MKT))
 
-sum_custos_MKT_this_month <- sum_custos_MKT$`mai/20`
+sum_custos_MKT_this_month <- sum_custos_MKT$`jun/20`
 
 
 new_clients_by_month <- MonthSales %>% 
