@@ -252,29 +252,49 @@ meses_custo <- apply(meses_custo, 2, projecao.as.numeric)
 
 Fluxo_de_caixa_2020_projecao[,3:length(names(Fluxo_de_caixa_2020_projecao))] <- meses_custo
 
-alocacao_pessoas_MKT <- data.frame("nomes" = c("Daniel Eloi", "Francine de Oliveira Marinho","	Gustavo Fernandes Dias","Pedro Henrique de Oliveira Gonçalves","Carlos Henrique de Carvalho Junior","Lorena Gabrielle de Souza Ribeiro","Alysson Vidotti","Leandro de Alencar Rangel","Rheubert Lucas Resende Rodigues Velho", "Diego Moreira"), 
+alocacao_pessoas_MKT <- data.frame("nomes" = c("Daniel Eloi", "Francine de Oliveira Marinho","Gustavo Fernandes Dias","Pedro Henrique de Oliveira Gonçalves","Carlos Henrique de Carvalho Junior","Lorena Gabrielle de Souza Ribeiro","Alysson Vidotti","Leandro de Alencar Rangel","Rheubert Lucas Resende Rodigues Velho", "Diego Moreira"), 
 "alocacao" = c( 0.5, 0.9, 0.9, 0.8, 0.7, 0.5, 0.5, 0.7, 0.4, 0.1))
 
-custosMKT <- Fluxo_de_caixa_2020_projecao %>% 
+custos_diretos_MKT <- Fluxo_de_caixa_2020_projecao %>% 
   filter(str_detect(categoria, "Marketing e Vendas"))
 
 custos_pessoas_MKT <- Fluxo_de_caixa_2020_projecao %>% 
   filter(nome %in% alocacao_pessoas_MKT$nomes)
 
-sum_custos_MKT <-apply(custosMKT[,2:dim(custosMKT)[2]], 2, FUN = sum, na.rm = TRUE)
+sum_custos_diretos_MKT <-apply(custos_diretos_MKT[,3:dim(custos_diretos_MKT)[2]], 2, FUN = sum, na.rm = TRUE)
 
-sum_custos_MKT <- as.data.frame(t(sum_custos_MKT))
+sum_custos_diretos_MKT <- as.data.frame(t(sum_custos_diretos_MKT))
 
-sum_custos_MKT_this_month <- sum_custos_MKT$`jun/20`
+sum_custos_diretos_MKT_this_month <- sum_custos_diretos_MKT$`jun/20`
 
+custos_pessoas_MKT_by_month <- custos_pessoas_MKT %>% 
+  group_by(nome) %>% 
+  summarise_at(vars(-categoria), sum, na.rm = TRUE)
+
+alocacao_pessoas_MKT <- alocacao_pessoas_MKT[order(alocacao_pessoas_MKT$nomes),]
+
+custos_pessoas_MKT_by_month <- custos_pessoas_MKT_by_month[order(custos_pessoas_MKT_by_month$nome),]
+
+sum_custos_pessoas_MKT <-apply(custos_pessoas_MKT[,3:dim(custos_pessoas_MKT)[2]], 2, FUN = sum, na.rm = TRUE)
+
+custos_pessoas_MKT_by_month_by_alocacao <- custos_pessoas_MKT_by_month[,-1] * alocacao_pessoas_MKT$alocacao
+
+custos_pessoas_MKT_by_month_by_alocacao <- cbind(nome = custos_pessoas_MKT_by_month$nome, custos_pessoas_MKT_by_month_by_alocacao) 
+
+total_custos_pessoas_MKT_by_month_by_alocacao <- as.data.frame(t(colSums(custos_pessoas_MKT_by_month_by_alocacao[,-1])))
 
 new_clients_by_month <- MonthSales %>% 
-  group_by("Data_de_fechamento" = month(`Data de fechamento`), Ano = format(`Data de fechamento`, "%Y" )) %>%
+  group_by("Data_de_fechamento" = month(`Data de fechamento`), Ano = as.numeric(format(`Data de fechamento`, "%Y" ))) %>%
   summarise(contagem = dplyr::n())
 
 new_clients_this_month <- new_clients_by_month %>% 
   filter(Ano == year(Sys.Date()), Data_de_fechamento == month(Sys.Date())-1)
 
-CAC <- sum_custos_MKT_this_month/ new_clients_this_month$contagem
+new_clients_by_month <- new_clients_by_month[order(new_clients_by_month$Ano, new_clients_by_month$Data_de_fechamento),]
+
+ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(2017, 4))
+
+
+CAC <- to/ new_clients_this_month$contagem
 ```
 
