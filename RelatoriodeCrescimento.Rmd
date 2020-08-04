@@ -29,9 +29,13 @@ if (!require(htmltools)) install.packages("htmltools")
 
 ```
 
-Oi pessoal, neste mês vou tentar uma nova forma de comunicação, um relatório online comentado. Assim conseguimos assincronamente saber o que tem se passado com a Pris, evitando reuniões. Estou plenamente aberto para feedback sobre o relatório e este novo formato.  
+Oi pessoal,
 
 Muito em breve esse relatório, que anda lá muito simples é verdade, deve ganhar mais musculatura. Construir um [sunbrst](http://rstudio-pubs-static.s3.amazonaws.com/495237_5336f47cb4df483f8f2780cd92066449.html) para nossos produtos, um [sankey](https://www.r-graph-gallery.com/sankey-diagram.html) mostrando os caminhos dos clientes entre meios de marketing e produtos além de outros dados como o Custo de Aquisição do Cliente (CAC), Tempo de vida do cliente (Lifetime e Lifetime value) estão todos no nosso radar. Só estamos esperando a construção do novo Processo de vendas.
+
+O GT de Processo de vendas está a todo vapor, abaixo você encontra um recorte do cronograma, que está se cumprindo bastante bem. 
+
+![](GT_processo_vendas.png)
 
 ## Vendas
 ```{r vendas semestre, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -80,19 +84,21 @@ QuarterSalesSum <- QuarterSales %>%
 QuarterSalesSum$Rendaper1000 <- round(QuarterSalesSum$Rendaper1000, 0)
 
 Q1SalesSum <- QuarterSalesSum %>% 
-  filter(endQuarter == "Q2" & Ano != 2017)
+  filter(endQuarter == "Q3" & Ano != 2017)
 
 ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Rendaper1000, label = Q1SalesSum$Rendaper1000))+
   geom_col(fill = "red", color = "black") +
   geom_text(size = 4,position = position_stack(vjust = 1.1)) +
   ylab("Renda em milhares de R$") +
   xlab("Ano") +
-  ggtitle("Renda no 2º trimestre de cada ano" ) +
+  ggtitle("Renda no 3º trimestre de cada ano" ) +
   theme_minimal()
 
 ```
   
- Conseguimos vender 5 mil reais à mais do que no ano passado, mesmo em meio à crise!
+  Mantendo nosso padrão faremos uma análise no trimestre e então focamos o mês. 
+  Começamos o o 3º Trimestre muitíssimo bem, já somando mais de 50% das vendas esperadas pro período se comparado com 2019. 
+  A Venda do OR pra Linx prova que de fato os primeiros impactos da pandemia já passaram. 
   
   
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -124,7 +130,9 @@ ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSales
   theme_minimal()
 ```
   
- O mês de Junho foi bem melhor que o do ano passado, e isso possibilitou que reequilibrassemos as vendas de Abril que foram mais fracas.
+ O mês de Julho em 2020 sozinho já superiu em  8,5% o Julho ano anterior, completando assim nosso terceiro mês de vendas melhores do que o ano passado. 
+  
+  Logo em breve teremos análises mais detalhadassobre cada produto correlacionado com suas metas.
   
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 SalesSumbyMonthandDeal <- MonthSales %>% 
@@ -189,14 +197,38 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   ggtitle("Tarefas Atrasadas") +
   xlab("Pessoa Responsável") +
   ylab("Contagem") +
-  ylim(0, max(xlim_tarefasAtrasadas) +1 ) +
+  #ylim(0, max(xlim_tarefasAtrasadas) +1 ) +
   coord_flip() +
   theme_minimal()
 
 ```
 
-Seguimos observando como estão as tarefas e seus atrasos. Já conversei com o Carlos e as tarefas que estão em atraso em nome dele são decorrentes da adaptação do Gustavo. 
-Em breve pretendemos também trazer visializações da produtividade positiva (não só esse gráfico-puxão-de-orelha acima), mas para isso é preciso que cada vez mais nós utilizemos os recursos do Bitrix, como tarefas, cards, pipes e ligações. 
+As tarefas atrasadas estão sob controle faz algumas semanas, ninguem tem tido problema mais sério. 
+
+## Tarefas Completadas
+
+```{r tarefas_completas, echo=FALSE}
+
+tarefas_completas <- tarefas %>% 
+  filter(Status == "Completed", month(Deadline) == month(Sys.Date())-1 & year(Deadline) == year(Sys.Date()))
+
+tarefas_completas <- tarefas_completas%>% 
+  filter(`Responsible person` %in% importantPeople)
+
+ggplot(data = tarefas_completas, mapping = aes(x = `Responsible person`)) +
+  geom_bar(fill = "aquamarine1", color = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust = -1)) +
+  geom_text(stat='count', aes(label=..count..), vjust=0.5, hjust= 1.5 ) +
+  ggtitle("Tarefas Completadas") +
+  xlab("Pessoa Responsável") +
+  ylab("Contagem") +
+  #ylim(0, max(xlim_tarefasAtrasadas) +1 ) +
+  coord_flip() +
+  theme_minimal()
+
+```
+  
+  Nos proximos meses começaremos a avaliar também as tarefas que tem sido cumpridas. O gráfico acima deve ter algumas distorções já que nem todas a tarefas estão sendo criadas com o responsáveis corretos, algo me vamos melhoras no Bitrix paulatinamente 
   
 ```{r tarefas sem deal e tarefas sem data, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -226,8 +258,8 @@ htmlwidgets::saveWidget(tarefas_com_problemas_DT, "tarefas_com_problemasDT.html"
 tarefas_com_problemas_DT
 ```
  
- Semanalmente estamos gerando uma lista de tarefas que podem indicar algum problemas, seja porque não tem data para terminar seja porque não estão vinculadas à um negócio. As pessoas responsáveis na lista são avisadas. Essa lista também nos permite agir preventivamente frente a errso de automações. 
- Um exemplo legal é que na sexta passada uma automação de datas, muito delicada e importante, do pipe de Contas a Receber estava quebrada. Ela só foi percebida por que esta lista indicou erros nas tarefas que estavam sendo criadas. 
+  Semanalmente estamos gerando uma lista de tarefas que podem indicar algum problemas, seja porque não tem data para terminar seja porque não estão vinculadas à um negócio. As pessoas responsáveis na lista são avisadas. Essa lista também nos permite agir preventivamente frente a erros de automações. 
+  A ação preventiva nas automações já tem mostrado efeito, temos um número constante menor de tarefas com problema. Caimos, em 8 semanas, de 42 para 12. Além disso conseguimos desafogar outras pessoas chaves de uma verificação chata.
   
 ```{r indicadores de SaaS, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -295,6 +327,6 @@ new_clients_by_month <- new_clients_by_month[order(new_clients_by_month$Ano, new
 ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(2017, 4))
 
 
-CAC <- to/ new_clients_this_month$contagem
+#CAC <- to/ new_clients_this_month$contagem
 ```
 
