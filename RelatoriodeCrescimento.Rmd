@@ -67,6 +67,7 @@ pipe_FunildeVendas$`Data de início` <- as.Date(x = pipe_FunildeVendas$`Data de 
 pipe_FunildeVendas$"endQuarter" <- quarters(pipe_FunildeVendas$`Data de fechamento`) 
 pipe_FunildeVendas$"startQuarter" <- quarters(pipe_FunildeVendas$`Data de fechamento`)
 pipe_FunildeVendas$Renda <- as.numeric(pipe_FunildeVendas$Renda)
+pipe_FunildeVendas$Fase <- as.factor(pipe_FunildeVendas$Fase)
 pipe_FunildeVendas %>% 
   mutate_at(vars(Renda), funs(round(x = ., digits = 0)))
 
@@ -163,6 +164,10 @@ sunburst(data = ThisMonthSalesSumjson, percent = TRUE, count = TRUE)
 ```{r tarefasAtrasadas, echo=FALSE, message=FALSE, warning=FALSE}
 tarefas <- read_excel("tarefas Bitrix.xlsx")
 
+tarefas_Bitrix_sem_participacao <- read_excel("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/07-Jul/tarefas Bitrix sem participacao.xlsx")
+
+tarefas <- rbind(tarefas, tarefas_Bitrix_sem_participacao)
+
 tarefas$Deadline <- as.Date(x = tarefas$Deadline, format = "%d/%m/%Y")
 tarefas$`Responsible person` <- as.factor(x = tarefas$`Responsible person`)
 
@@ -238,13 +243,15 @@ tarefasSemDeal <- tarefas %>%
 tarefasSemData <- tarefas %>% 
   filter(Status == "Pending",  is.na(Deadline))
 
+tarefaSemCRM
+
 tarefas_com_ploblemas <- dplyr::union(tarefasSemData, tarefasSemDeal)
 
-write.csv2(tarefas_com_ploblemas, file = "tarefas com problemas.csv")
+write.csv2(tarefas_com_ploblemas, file = paste("tarefas com problemas", Sys.Date(), ".csv"))
 
 ```
   
-## Tarafas com problemas
+## Tarefas com problemas
 
 ```{r echo=FALSE}
 tarefas_com_problemas_DT <-DT::datatable(tarefas_com_ploblemas, options = list(
@@ -253,7 +260,7 @@ tarefas_com_problemas_DT <-DT::datatable(tarefas_com_ploblemas, options = list(
     'Responsible person',
     backgroundColor = DT::styleEqual(NA, c('red')))
 
-htmlwidgets::saveWidget(tarefas_com_problemas_DT, "tarefas_com_problemasDT.html")
+htmlwidgets::saveWidget(tarefas_com_problemas_DT, paste("tarefas_com_problemasDT", Sys.Date(), ".html"))
 
 tarefas_com_problemas_DT
 ```
@@ -329,4 +336,25 @@ ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(20
 
 #CAC <- to/ new_clients_this_month$contagem
 ```
+
+## Deals sem tarefas
+
+```{r}
+deals_ativos <- filter (pipe_FunildeVendas, Fase != "Perda Fechada" & Fase != "Ganho Fechado")
+
+deals_ativos_e_tarefas <- left_join(deals_ativos, tarefas, by = c("Nome do negócio" = "Deal"))
+
+deals_sem_tarefa <- deals_ativos_e_tarefas %>% 
+  filter(is.na(ID.y))
+
+deals_sem_tarefa <- deals_sem_tarefa[c("ID.x", "Fase", "Responsável", "Nome do negócio")]
+
+deals_sem_tarefa <- deals_sem_tarefa[!duplicated(deals_sem_tarefa$ID.x),]
+
+deals_sem_tarefaDT <- DT::datatable(data = deals_sem_tarefa)
+
+deals_sem_tarefaDT
+
+htmlwidgets::saveWidget(deals_sem_tarefaDT, paste("deals_sem_tarefaDT", Sys.Date(), ".html"))
+``` 
 
