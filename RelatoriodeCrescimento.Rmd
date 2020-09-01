@@ -29,13 +29,8 @@ if (!require(htmltools)) install.packages("htmltools")
 
 ```
 
-Oi pessoal,
-
-Muito em breve esse relatório, que anda lá muito simples é verdade, deve ganhar mais musculatura. Construir um [sunbrst](http://rstudio-pubs-static.s3.amazonaws.com/495237_5336f47cb4df483f8f2780cd92066449.html) para nossos produtos, um [sankey](https://www.r-graph-gallery.com/sankey-diagram.html) mostrando os caminhos dos clientes entre meios de marketing e produtos além de outros dados como o Custo de Aquisição do Cliente (CAC), Tempo de vida do cliente (Lifetime e Lifetime value) estão todos no nosso radar. Só estamos esperando a construção do novo Processo de vendas.
-
-O GT de Processo de vendas está a todo vapor, abaixo você encontra um recorte do cronograma, que está se cumprindo bastante bem. 
-
-![](GT_processo_vendas.png)
+  Comecemos atualizando Sobre o novo Processo de Vendas.
+  Já estamos implementando o pipe com suas automações em 3 Grupos a) POPs, b)Indicadores, c) Emails. Esperamos que até o final do mês entejam todos implementados faltando somente os testes finais, ou seja, liberaremos a versão alpha do novo Pipe de Vendas. 
 
 ## Vendas
 ```{r vendas semestre, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -98,8 +93,7 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
 ```
   
   Mantendo nosso padrão faremos uma análise no trimestre e então focamos o mês. 
-  Começamos o o 3º Trimestre muitíssimo bem, já somando mais de 50% das vendas esperadas pro período se comparado com 2019. 
-  A Venda do OR pra Linx prova que de fato os primeiros impactos da pandemia já passaram. 
+  Seguimos muitíssimo bem no 2º trimestre deste ano. Se em Julho já haviamos feito 50%  das vendas esperadas para o trimeste, no final da Agosto haviamos batido 200%
   
   
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -131,7 +125,7 @@ ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSales
   theme_minimal()
 ```
   
- O mês de Julho em 2020 sozinho já superiu em  8,5% o Julho ano anterior, completando assim nosso terceiro mês de vendas melhores do que o ano passado. 
+ O mês de Agosto em 2020  já superiu em  208% o Julho ano anterior e  completando assim nosso terceiro mês de vendas melhores do que o ano passado. 
   
   Logo em breve teremos análises mais detalhadassobre cada produto correlacionado com suas metas.
   
@@ -208,7 +202,24 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
 
 ```
 
-As tarefas atrasadas estão sob controle faz algumas semanas, ninguem tem tido problema mais sério. 
+As tarefas atrasadas derão um salto porque haviam mais de 30 mil tarefas que não estavam aparecendo no nossa radar. 
+
+## Tempos das tarefas atrassadas
+
+```{r}
+tarefasAtrasadas <- tarefasAtrasadas %>% 
+  mutate(tempo_de_atraso = Sys.Date() - Deadline)
+
+ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
+  geom_violin(mapping = aes(y = tempo_de_atraso), fill = "red", color = NA) +
+  ggtitle("Volume das tarefas atrasadas no tempo") +
+  xlab("Pessoa Responsável") +
+  ylab("Dias de atraso") +
+  coord_flip() +
+  theme_minimal()
+  
+```
+
 
 ## Tarefas Completadas
 
@@ -242,8 +253,6 @@ tarefasSemDeal <- tarefas %>%
 
 tarefasSemData <- tarefas %>% 
   filter(Status == "Pending",  is.na(Deadline))
-
-tarefaSemCRM
 
 tarefas_com_ploblemas <- dplyr::union(tarefasSemData, tarefasSemDeal)
 
@@ -339,7 +348,7 @@ ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(20
 
 ## Deals sem tarefas
 
-```{r}
+```{r echo=FALSE}
 deals_ativos <- filter (pipe_FunildeVendas, Fase != "Perda Fechada" & Fase != "Ganho Fechado")
 
 deals_ativos_e_tarefas <- left_join(deals_ativos, tarefas, by = c("Nome do negócio" = "Deal"))
@@ -351,7 +360,8 @@ deals_sem_tarefa <- deals_sem_tarefa[c("ID.x", "Fase", "Responsável", "Nome do 
 
 deals_sem_tarefa <- deals_sem_tarefa[!duplicated(deals_sem_tarefa$ID.x),]
 
-deals_sem_tarefaDT <- DT::datatable(data = deals_sem_tarefa)
+deals_sem_tarefaDT <- DT::datatable(deals_sem_tarefa, options = list(
+  order = list(list(3, 'asc'))))
 
 deals_sem_tarefaDT
 
