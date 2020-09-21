@@ -26,19 +26,21 @@ if (!require(forecast)) install.packages("forecast")
 if (!require(stringr)) install.packages("stringr")
 if (!require(DT)) install.packages("DT")
 if (!require(htmltools)) install.packages("htmltools")
-
+if (!require(tidyr)) install.packages("tidyr")
+if (!require(d3r)) install.packages("d3r")
+if (!require(listviewer)) install.packages("listviewer")
+if (!require(treemap)) install.packages("treemap")
+if (!require(devtools)) install.packages("devtools")
+if (!require(d3treeR)) install_github("timelyportfolio/d3treeR")
 ```
 
   Comecemos atualizando Sobre o novo Processo de Vendas.
-  Já estamos implementando o pipe com suas automações em 3 Grupos a) POPs, b)Indicadores, c) Emails. Esperamos que até o final do mês entejam todos implementados faltando somente os testes finais, ou seja, liberaremos a versão alpha do novo Pipe de Vendas. 
+  Já estamos implementando o pipe com suas automações em 3 Grupos a) POPs, b) Indicadores, c) Emails. Esperamos que até o final do mês entejam todos implementados faltando somente os testes finais, ou seja, liberaremos a versão alpha do novo Pipe de Vendas de Remuneração 
 
 ## Vendas
-```{r vendas semestre, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
+```{r carregando pipe de Vendas RV, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 pipe_FunildeVendas<- read_delim("pipe Funil de Vendas.csv", ";", escape_double = FALSE, locale = locale(), 
                                   trim_ws = TRUE)
-not_all_na <- function(x) {!all(is.na(x))}
-
-pipe_FunildeVendas <- pipe_FunildeVendas %>% select_if(not_all_na)
 
 important_columns <- c("ID", 
                        "Pipeline",
@@ -52,21 +54,85 @@ important_columns <- c("ID",
                        "Data de fechamento",
                        "Produto",
                        "Origem da Oportunidade", 
-                       "Deal de:" )
+                       "Deal de:",
+                       "Subcategoria de Produtos",
+                       "Categoria de Produto", 
+                       "PipeVendas_RV_DataEntradaFase_ContaNaoAnalisada",
+                       "PipeVendas_RV_DataEntradaFase_ContaNaoPriorizada", 
+                       "PipeVendas_RV_DataEntradaFase_ContaPrecisaMaisEngajamento", 
+                       "PipeVendas_RV_DataEntradaFase_ContaPriorizadaEngajandoDecisores", 
+                       "PipeVendas_RV_DataEntradaFase_ContaEngajadaPreparandoProposta", 
+                       "PipeVendas_RV_DataEntradaFase_ContaAguardandoProposta", 
+                       "PipeVendas_RV_DataEntradaFase_FupPropostaSemEngajamento", 
+                       "PipeVendas_RV_DataEntradaFase_FupPropostaComEngajamento", 
+                       "PipeVendas_RV_DataEntradaFase_NegociacaoSuprimentos",
+                       "PipeVendas_RV_DataEntradaFase_NegocioGanho",
+                       "PipeVendas_RV_DataEntradaFase_NegocioPerdido")
 
 pipe_FunildeVendas <- subset.data.frame(pipe_FunildeVendas, select= important_columns)
 
-pipe_FunildeVendas <- pipe_FunildeVendas[!is.na(pipe_FunildeVendas$Pipeline) & pipe_FunildeVendas$Pipeline == "Funil de vendas",]
+#not_all_na <- function(x) {!all(is.na(x))} desligado até o pipe estar pelo menos em alpha
+
+#pipe_FunildeVendas <- pipe_FunildeVendas %>% select_if(not_all_na) desligado até o pipe estar pelo menos em alpha
+
+pipe_FunildeVendas <- pipe_FunildeVendas[!is.na(pipe_FunildeVendas$Pipeline) & pipe_FunildeVendas$Pipeline == "[TESTE] Processo de Vendas",]
+
 pipe_FunildeVendas$`Data de fechamento` <- as.Date(x = pipe_FunildeVendas$`Data de fechamento`, format = "%d/%m/%Y")
+
 pipe_FunildeVendas$`Data de início` <- as.Date(x = pipe_FunildeVendas$`Data de início`, format = "%d/%m/%Y")
+
 pipe_FunildeVendas$"endQuarter" <- quarters(pipe_FunildeVendas$`Data de fechamento`) 
+
 pipe_FunildeVendas$"startQuarter" <- quarters(pipe_FunildeVendas$`Data de fechamento`)
+
 pipe_FunildeVendas$Renda <- as.numeric(pipe_FunildeVendas$Renda)
+
 pipe_FunildeVendas$Fase <- as.factor(pipe_FunildeVendas$Fase)
+
 pipe_FunildeVendas %>% 
   mutate_at(vars(Renda), funs(round(x = ., digits = 0)))
 
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaNaoAnalisada <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaNaoAnalisada, format = "%d/%m/%Y")
 
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaNaoPriorizada <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaNaoPriorizada, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaPrecisaMaisEngajamento <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaPrecisaMaisEngajamento, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaPriorizadaEngajandoDecisores <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaPriorizadaEngajandoDecisores, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaEngajadaPreparandoProposta <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaEngajadaPreparandoProposta, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaAguardandoProposta <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_ContaAguardandoProposta, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_FupPropostaSemEngajamento <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_FupPropostaSemEngajamento, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_FupPropostaComEngajamento <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_FupPropostaComEngajamento, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegociacaoSuprimentos <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegociacaoSuprimentos, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioGanho <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioGanho, format = "%d/%m/%Y")
+
+pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioPerdido <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioPerdido, format = "%d/%m/%Y")
+
+```
+
+```{r indice de produtos}
+Indice_de_produtos <- read_csv("Listagem de produtos e precificacao - 0 - Indice de produtos.csv", 
+    skip = 1)
+
+Indice_de_produtos <- Indice_de_produtos %>% 
+  select("Categoria", "Subcategoria", "Produtos")
+
+Indice_de_produtos$Categoria <- as.factor(Indice_de_produtos$Categoria)
+Indice_de_produtos$Subcategoria <- as.factor(Indice_de_produtos$Subcategoria)
+Indice_de_produtos$Produtos <- as.factor(Indice_de_produtos$Produtos)
+
+pipe_FunildeVendas$`Subcategoria de Produtos` <- Indice_de_produtos[match(pipe_FunildeVendas$Produto, Indice_de_produtos$Produtos), 2]
+pipe_FunildeVendas$`Categoria de Produto` <- Indice_de_produtos[match(pipe_FunildeVendas$Produto, Indice_de_produtos$Produtos), 1]
+
+```
+
+```{r vendas semestre, echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
 QuarterSales <- pipe_FunildeVendas%>%
   filter(Fase == "Ganho Fechado")
   
@@ -93,7 +159,7 @@ ggplot(data = Q1SalesSum, mapping = aes(x = Q1SalesSum$Ano, y = Q1SalesSum$Renda
 ```
   
   Mantendo nosso padrão faremos uma análise no trimestre e então focamos o mês. 
-  Seguimos muitíssimo bem no 2º trimestre deste ano. Se em Julho já haviamos feito 50%  das vendas esperadas para o trimeste, no final da Agosto haviamos batido 200%
+  Seguimos muitíssimo bem no 2º trimestre deste ano. Se em julho já haviamos feito 50%  das vendas esperadas para o trimeste, no final da agosto haviamos batido 200%
   
   
 ```{r vendas mensal,  echo=FALSE, message=FALSE, warning=FALSE, results = "hide"}
@@ -125,7 +191,7 @@ ggplot(data = AbrilSalesSum, mapping = aes(x = AbrilSalesSum$Ano, y = AbrilSales
   theme_minimal()
 ```
   
- O mês de Agosto em 2020  já superiu em  208% o Julho ano anterior e  completando assim nosso terceiro mês de vendas melhores do que o ano passado. 
+ O mês de agosto em 2020 já superou em  208% o agosto ano anterior e  completando assim nosso terceiro mês de vendas melhores do que o ano passado. 
   
   Logo em breve teremos análises mais detalhadassobre cada produto correlacionado com suas metas.
   
@@ -145,12 +211,27 @@ ThisMonthSalesSum <- SalesSumbyMonthandDeal %>%
 ```
 
 ```{r sunburst, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-ThisMonthSalesSumSunburst <- read_delim("ThisMonthSalesSum.csv", 
-    ";", escape_double = FALSE, locale = locale(encoding = "ISO-8859-1"), 
-    trim_ws = TRUE)
-ThisMonthSalesSumjson <- ThisMonthSalesSumSunburst[,5:6]
+#SalesSumSunburst <- as.data.frame(cbind( sunburst_cadence = paste(pipe_FunildeVendas$`Categoria de Produto`$Categoria, 
+#                                                              pipe_FunildeVendas$`Subcategoria de Produtos`$Subcategoria, pipe_FunildeVendas$Produto, 
+#                                                              sep = "-"),
+#                                     Renda = pipe_FunildeVendas$Renda))
 
-sunburst(data = ThisMonthSalesSumjson, percent = TRUE, count = TRUE)
+SalesSumSunburst <- as.data.frame(
+                      cbind(Renda = pipe_FunildeVendas$Renda, 
+                          "Categoria de Produto" = pipe_FunildeVendas$`Categoria de Produto`, 
+                          "Subcategoria de Produtos" = pipe_FunildeVendas$`Subcategoria de Produtos`, 
+                          "Produto" = pipe_FunildeVendas$Produto))
+SalesSumSunburst <- na.omit(SalesSumSunburst)
+
+salesSumTreemap <- treemap(dtf = SalesSumSunburst, index = c("Categoria", "Subcategoria", "Produto"), vSize = "Renda", type = "value")
+
+salesSumTreemapInteractive <- d3treeR::d3tree(data = salesSumTreemap, rootname = "Vendas por produro")
+
+htmlwidgets::saveWidget(salesSumTreemapInteractive, paste("Venda_por_praduto", Sys.Date(), ".html"))
+
+salesSumTreemapInteractive
+
+
 
 ```
   
@@ -193,20 +274,20 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   geom_bar(fill = "red", color = "black") +
   theme(axis.text.x = element_text(angle = 90, hjust = -1)) +
   geom_text(stat='count', aes(label=..count..), vjust=0.5, hjust= 1.5 ) +
-  ggtitle("Tarefas Atrasadas") +
-  xlab("Pessoa Responsável") +
-  ylab("Contagem") +
-  #ylim(0, max(xlim_tarefasAtrasadas) +1 ) +
-  coord_flip() +
+  ggtitle("Tarefas Atrasadas") + 
+  xlab("Pessoa Responsável") + 
+  ylab("Contagem") + 
+  #ylim(0, max(xlim_tarefasAtrasadas) +1 ) + 
+  coord_flip() + 
   theme_minimal()
-
 ```
 
 As tarefas atrasadas derão um salto porque haviam mais de 30 mil tarefas que não estavam aparecendo no nossa radar. 
+Eu vou avaliar os maiores casos para 1) Melhorar as automações que as geram e reparar possíveis erros; 2) Repensar, junto ao responsável, se o processo está bom ou se precisa de melhorias. 
 
 ## Tempos das tarefas atrassadas
 
-```{r}
+```{r echo=FALSE, message=FALSE}
 tarefasAtrasadas <- tarefasAtrasadas %>% 
   mutate(tempo_de_atraso = Sys.Date() - Deadline)
 
@@ -220,7 +301,8 @@ ggplot(data = tarefasAtrasadas, mapping = aes(x = `Responsible person`)) +
   
 ```
 
-
+  O Grafico acima nos ajuda a entender como as tarefas estão atrasadas no tempo. Gráficos que param abruptamente indicam que há uma revisão periodica dos atrasos. 
+  
 ## Tarefas Completadas
 
 ```{r tarefas_completas, echo=FALSE}
@@ -243,8 +325,8 @@ ggplot(data = tarefas_completas, mapping = aes(x = `Responsible person`)) +
   theme_minimal()
 
 ```
-  
-  Nos proximos meses começaremos a avaliar também as tarefas que tem sido cumpridas. O gráfico acima deve ter algumas distorções já que nem todas a tarefas estão sendo criadas com o responsáveis corretos, algo me vamos melhoras no Bitrix paulatinamente 
+    
+  O destaque deste mês são os Filtros de PI que o Gustavo tem feito, disparado quem mais cumpriu atividades em agosto. É válido avaliar se estamos sendo produtivos com estas atividades. 
   
 ```{r tarefas sem deal e tarefas sem data, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -274,10 +356,35 @@ htmlwidgets::saveWidget(tarefas_com_problemas_DT, paste("tarefas_com_problemasDT
 tarefas_com_problemas_DT
 ```
  
-  Semanalmente estamos gerando uma lista de tarefas que podem indicar algum problemas, seja porque não tem data para terminar seja porque não estão vinculadas à um negócio. As pessoas responsáveis na lista são avisadas. Essa lista também nos permite agir preventivamente frente a erros de automações. 
-  A ação preventiva nas automações já tem mostrado efeito, temos um número constante menor de tarefas com problema. Caimos, em 8 semanas, de 42 para 12. Além disso conseguimos desafogar outras pessoas chaves de uma verificação chata.
-  
-```{r indicadores de SaaS, echo=FALSE, message=FALSE, warning=FALSE}
+  Devido ao erro ao captar as tarefas tivemos um aumento expressivo de tarefas a serem analisadas, passamos de 12 para mais de 2k. 
+
+## Deals sem tarefas
+
+```{r echo=FALSE}
+deals_ativos <- filter (pipe_FunildeVendas, Fase != "Perda Fechada" & Fase != "Ganho Fechado")
+
+deals_ativos_e_tarefas <- left_join(deals_ativos, tarefas, by = c("Nome do negócio" = "Deal"))
+
+deals_sem_tarefa <- deals_ativos_e_tarefas %>% 
+  filter(is.na(ID.y))
+
+deals_sem_tarefa <- deals_sem_tarefa[c("ID.x", "Fase", "Responsável", "Nome do negócio")]
+
+deals_sem_tarefa <- deals_sem_tarefa[!duplicated(deals_sem_tarefa$ID.x),]
+
+deals_sem_tarefaDT <- DT::datatable(deals_sem_tarefa, options = list(
+  order = list(list(3, 'asc'))))
+
+deals_sem_tarefaDT
+
+htmlwidgets::saveWidget(deals_sem_tarefaDT, paste("deals_sem_tarefaDT", Sys.Date(), ".html"))
+``` 
+
+  Ainda assim temos 20 deals que estava sem tarefas. Essa lista de Deals será compartilhada com os responsáveis para que tomem as atitudes necessárias
+
+## Indicadores 
+
+```{r CAC, echo=FALSE, message=FALSE, warning=FALSE}
 
 Fluxo_de_caixa_2020_projecao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/06-Jun/Fluxo de caixa 2020 - projecao.csv", 
     ";", escape_double = FALSE, locale = locale(decimal_mark = ","), 
@@ -341,30 +448,33 @@ new_clients_this_month <- new_clients_by_month %>%
 new_clients_by_month <- new_clients_by_month[order(new_clients_by_month$Ano, new_clients_by_month$Data_de_fechamento),]
 
 ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(2017, 4))
-
-
 #CAC <- to/ new_clients_this_month$contagem
+
+
+
 ```
 
-## Deals sem tarefas
 
-```{r echo=FALSE}
-deals_ativos <- filter (pipe_FunildeVendas, Fase != "Perda Fechada" & Fase != "Ganho Fechado")
+```{r Tempo em cada fase}
+datas_entrada_fases <- grep(pattern =  "PipeVendas", x = names(pipe_FunildeVendas))
+tempo_em_cada_fase <-subset(x = pipe_FunildeVendas, select = datas_entrada_fases)
+tempo_em_cada_fase <- cbind(pipe_FunildeVendas$ID, tempo_em_cada_fase)
 
-deals_ativos_e_tarefas <- left_join(deals_ativos, tarefas, by = c("Nome do negócio" = "Deal"))
+for (i in 1:nrow(tempo_em_cada_fase)) {
+  for (j in 2:ncol(tempo_em_cada_fase)){
+   tempos[i,j] <- as.matrix (tempo_em_cada_fase[i, j] - tempo_em_cada_fase[i,j+1])
+   ### EM CONSTRUÇÃO
+ }
+}
+```
 
-deals_sem_tarefa <- deals_ativos_e_tarefas %>% 
-  filter(is.na(ID.y))
+```{r Tempo de conversao por produto e setor}
 
-deals_sem_tarefa <- deals_sem_tarefa[c("ID.x", "Fase", "Responsável", "Nome do negócio")]
+tempo_de_conversao_por_produto <- pipe_FunildeVendas %>% 
+  dplyr::filter(Fase == "Negócio ganho")
 
-deals_sem_tarefa <- deals_sem_tarefa[!duplicated(deals_sem_tarefa$ID.x),]
 
-deals_sem_tarefaDT <- DT::datatable(deals_sem_tarefa, options = list(
-  order = list(list(3, 'asc'))))
 
-deals_sem_tarefaDT
 
-htmlwidgets::saveWidget(deals_sem_tarefaDT, paste("deals_sem_tarefaDT", Sys.Date(), ".html"))
-``` 
+```
 
