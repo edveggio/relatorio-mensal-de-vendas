@@ -75,7 +75,7 @@ pipe_FunildeVendas <- subset.data.frame(pipe_FunildeVendas, select= important_co
 
 #pipe_FunildeVendas <- pipe_FunildeVendas %>% select_if(not_all_na) desligado até o pipe estar pelo menos em alpha
 
-pipe_FunildeVendas <- pipe_FunildeVendas[!is.na(pipe_FunildeVendas$Pipeline) & pipe_FunildeVendas$Pipeline == "[TESTE] Processo de Vendas",]
+pipe_FunildeVendas <- pipe_FunildeVendas[!is.na(pipe_FunildeVendas$Pipeline) & pipe_FunildeVendas$Pipeline == "Funil de vendas",]
 
 pipe_FunildeVendas$`Data de fechamento` <- as.Date(x = pipe_FunildeVendas$`Data de fechamento`, format = "%d/%m/%Y")
 
@@ -115,6 +115,18 @@ pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioGanho <- as.Date(pipe_Fu
 pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioPerdido <- as.Date(pipe_FunildeVendas$PipeVendas_RV_DataEntradaFase_NegocioPerdido, format = "%d/%m/%Y")
 
 ```
+
+```{r traducao produtos antigos para novos produtos, include=FALSE}
+
+traducao <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/Tradução de produtos antigos para os novos/Traducao produtos antigos  para produtos novos v1.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+
+traducao$`Produtos antigos` <- as.factor(traducao$`Produtos antigos`)
+traducao$`Produtos novos` <- as.factor(traducao$`Produtos novos`)
+
+pipe_FunildeVendas$Produto <- traducao[match(pipe_FunildeVendas$Produto, traducao$`Produtos antigos`), 2]
+```
+
 
 ```{r indice de produtos}
 Indice_de_produtos <- read_csv("Listagem de produtos e precificacao - 0 - Indice de produtos.csv", 
@@ -223,7 +235,12 @@ SalesSumSunburst <- as.data.frame(
                           "Produto" = pipe_FunildeVendas$Produto))
 SalesSumSunburst <- na.omit(SalesSumSunburst)
 
-salesSumTreemap <- treemap(dtf = SalesSumSunburst, index = c("Categoria", "Subcategoria", "Produto"), vSize = "Renda", type = "value")
+salesSumTreemap <- treemap(dtf = SalesSumSunburst, 
+                           index = c("Categoria", "Subcategoria", "Produto"), 
+                           vSize = "Renda", 
+                           type = "value", 
+                           fontfamily.title = "sans",
+                          fontfamily.labels = "sans")
 
 salesSumTreemapInteractive <- d3treeR::d3tree(data = salesSumTreemap, rootname = "Vendas por produro")
 
@@ -455,7 +472,7 @@ ts_new_clients <- ts(new_clients_by_month$contagem, frequency = 12, start = c(20
 ```
 
 
-```{r Tempo em cada fase}
+```{r Tempo em cada fase, eval=FALSE, include=FALSE}
 datas_entrada_fases <- grep(pattern =  "PipeVendas", x = names(pipe_FunildeVendas))
 tempo_em_cada_fase <-subset(x = pipe_FunildeVendas, select = datas_entrada_fases)
 tempo_em_cada_fase <- cbind(pipe_FunildeVendas$ID, tempo_em_cada_fase)
@@ -468,7 +485,7 @@ for (i in 1:nrow(tempo_em_cada_fase)) {
 }
 ```
 
-```{r Tempo de conversao por produto e setor}
+```{r Tempo de conversao por produto e setor, eval=FALSE, include=FALSE}
 
 tempo_de_conversao_por_produto <- pipe_FunildeVendas %>% 
   dplyr::filter(Fase == "Negócio ganho")
