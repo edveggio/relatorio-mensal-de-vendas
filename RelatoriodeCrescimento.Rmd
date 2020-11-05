@@ -495,3 +495,17 @@ tempo_de_conversao_por_produto <- pipe_FunildeVendas %>%
 
 ```
 
+```{r taxa de conversão de leads em propostas}
+
+Leads <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/Tradução de produtos antigos para os novos/Leads.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+Leads$Status <- as.factor(Leads$Status)
+Leads$Fonte <- as.factor(Leads$Fonte)
+Leads <- Leads %>% 
+  filter(Status != "não" & Status != "Queria me engessar na área aonde estou me especializando, vejo a empresa como uma bela oportunidade." & Status != "Banco de Talentos")
+
+Contatos <- read_delim("D:/Ed Velho/Documents/Relatorio mensal de vendas - Pris/Tradução de produtos antigos para os novos/Contatos.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
